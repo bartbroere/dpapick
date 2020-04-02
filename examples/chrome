@@ -15,16 +15,18 @@
 ## This program is distributed under GPLv3 licence (see LICENCE.txt)       ##
 ##                                                                         ##
 #############################################################################
+import sys
 
+import six
 from DPAPI.Probes import chrome
 from DPAPI.Core import masterkey
 import sqlite3
 import hashlib, os
 from optparse import OptionParser
 
-class GetChromePasswords:
 
-    _descr = "Retreive and decrypt the Google Chrome database"
+class GetChromePasswords:
+    _descr = "Retrieve and decrypt the Google Chrome database"
 
     ## sqlite database is located under
     ## %LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Web Data (old)
@@ -35,9 +37,9 @@ class GetChromePasswords:
         values = {}
         i = 0
 
-        fields = [ 'origin_url', 'action_url', 'username_element',
-                   'username_value', 'password_element', 'password_value',
-                   'date_created' ]
+        fields = ['origin_url', 'action_url', 'username_element',
+                  'username_value', 'password_element', 'password_value',
+                  'date_created']
 
         for db in sqldbs:
             conn = sqlite3.connect(db)
@@ -58,7 +60,8 @@ class GetChromePasswords:
             c.close()
             conn.close()
 
-        return { self.__class__.__name__: values }
+        return {self.__class__.__name__: values}
+
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -73,11 +76,16 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     if options.password and options.h:
-        print >>sys.stderr,"Choose either password or hash option"
-        sys.exit(1)
+        if six.PY2:
+            print >> sys.stderr, "Choose either password or hash option"
+            sys.exit(1)
+        elif six.PY3:
+            sys.stderr.write("Choose either password or hash option")
+            quit(1)
+
     if options.password:
         options.h = hashlib.sha1(options.password.encode("UTF-16LE")).hexdigest()
-    options.h = options.h.decode('hex')
+    options.h = bytes.fromhex(options.h)
 
     mkp = masterkey.MasterKeyPool()
     mkp.loadDirectory(options.masterkeydir)
@@ -85,9 +93,9 @@ if __name__ == '__main__':
     if options.credhist != None:
         mkp.addCredhistFile(options.sid, options.credhist)
 
-    fields = [ 'origin_url', 'action_url', 'username_element',
-               'username_value', 'password_element', 'password_value',
-               'date_created' ]
+    fields = ['origin_url', 'action_url', 'username_element',
+              'username_value', 'password_element', 'password_value',
+              'date_created']
 
     values = []
     for db in options.chromedbs:
@@ -110,12 +118,11 @@ if __name__ == '__main__':
         c.close()
         conn.close()
 
-    s = [ "Chrome passwords" ]
+    s = ["Chrome passwords"]
     for e in values:
-        s.append('-'*40)
+        s.append('-' * 40)
         for f in fields:
             s.append("%s: %s" % (f, e[f]))
-    print "\n".join(s)
+    print("\n".join(s))
 
 # vim:ts=4:expandtab:sw=4
-

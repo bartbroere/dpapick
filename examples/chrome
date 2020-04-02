@@ -17,7 +17,6 @@
 #############################################################################
 import sys
 
-import six
 from DPAPI.Probes import chrome
 from DPAPI.Core import masterkey
 import sqlite3
@@ -76,16 +75,20 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     if options.password and options.h:
-        if six.PY2:
+        if sys.version_info[0] == 2:
             print >> sys.stderr, "Choose either password or hash option"
             sys.exit(1)
-        elif six.PY3:
+        elif sys.version_info[0] == 3:
             sys.stderr.write("Choose either password or hash option")
             quit(1)
 
     if options.password:
         options.h = hashlib.sha1(options.password.encode("UTF-16LE")).hexdigest()
-    options.h = bytes.fromhex(options.h)
+
+    if sys.version_info[0] == 2:
+        options.h = options.h.decode('hex')
+    if sys.version_info[0] == 3:
+        options.h = bytes.fromhex(options.h)
 
     mkp = masterkey.MasterKeyPool()
     mkp.loadDirectory(options.masterkeydir)

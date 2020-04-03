@@ -285,7 +285,7 @@ def pbkdf2(passphrase, salt, keylen, iterations, digest='sha1'):
         derived = M2Crypto.EVP.hmac(passphrase, U, digest)
         for r in range(iterations - 1):
             actual = M2Crypto.EVP.hmac(passphrase, derived, digest)
-            derived = b''.join([bytes(x ^ y) for (x, y) in zip(derived, actual)])
+            derived = b''.join([bytes([x ^ y]) for (x, y) in zip(derived, actual)])
         buff += derived
     return buff[:int(keylen)]
 

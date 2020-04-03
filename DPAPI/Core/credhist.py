@@ -34,7 +34,7 @@ class RPC_SID(eater.DataStruct):
     def parse(self, data):
         self.version = data.eat("B")
         n = data.eat("B")
-        self.idAuth = struct.unpack(">Q", "\0\0" + data.eat("6s"))[0]
+        self.idAuth = struct.unpack(">Q", b"\0\0" + data.eat("6s"))[0]
         self.subAuth = data.eat("%dL" % n)
 
     def __str__(self):

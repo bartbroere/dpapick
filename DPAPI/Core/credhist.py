@@ -135,7 +135,7 @@ class CredhistEntry(eater.DataStruct):
         cleartxt = crypto.dataDecrypt(self.cipherAlgo, self.hashAlgo, self.encrypted,
                                       enckey, self.iv, self.rounds)
         self.pwdhash = cleartxt[:self.shaHashLen]
-        self.ntlm = cleartxt[self.shaHashLen:self.shaHashLen + self.ntHashLen].rstrip("\x00")
+        self.ntlm = cleartxt[self.shaHashLen:self.shaHashLen + self.ntHashLen].rstrip(b"\x00")
         if len(self.ntlm) != 16:
             self.ntlm = None
 
@@ -255,13 +255,13 @@ class CredHistFile(eater.DataStruct):
         if validonly and not self.valid:
             return ""
         s = []
-        for e in self.entries.itervalues():
+        for e in self.entries.values():
             s.append(e.jtr_shadow())
         return "\n".join(s)
 
     def __repr__(self):
         s = ["CredHistPool:  %s" % self.curr_guid]
-        for e in self.entries.itervalues():
+        for e in self.entries.values():
             s.append("---")
             s.append(repr(e))
         s.append("====")

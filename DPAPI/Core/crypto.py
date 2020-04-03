@@ -192,18 +192,18 @@ def decrypt_lsa_key_nt5(lsakey, syskey):
     """This function decrypts the LSA key using the syskey"""
     dg = hashlib.md5()
     dg.update(syskey)
-    for i in xrange(1000):
+    for i in range(1000):
         dg.update(lsakey[60:76])
     arcfour = M2Crypto.RC4.RC4(dg.digest())
     deskey = arcfour.update(lsakey[12:60]) + arcfour.final()
-    return [deskey[16 * x:16 * (x + 1)] for x in xrange(3)]
+    return [deskey[16 * x:16 * (x + 1)] for x in range(3)]
 
 
 def decrypt_lsa_key_nt6(lsakey, syskey):
     """This function decrypts the LSA keys using the syskey"""
     dg = hashlib.sha256()
     dg.update(syskey)
-    for i in xrange(1000):
+    for i in range(1000):
         dg.update(lsakey[28:60])
     c = M2Crypto.EVP.Cipher(alg="aes_256_ecb", key=dg.digest(), iv="", op=M2Crypto.decrypt)
     c.set_padding(0)
@@ -214,7 +214,7 @@ def decrypt_lsa_key_nt6(lsakey, syskey):
     nb = struct.unpack("<L", keys[24:28])[0]
     off = 28
     kd = {}
-    for i in xrange(nb):
+    for i in range(nb):
         g = "%0x-%0x-%0x-%0x%0x-%0x%0x%0x%0x%0x%0x" % struct.unpack("<L2H8B", keys[off:off + 16])
         t, l = struct.unpack_from("<2L", keys[off + 16:])
         k = keys[off + 24:off + 24 + l]
@@ -263,7 +263,7 @@ def decrypt_lsa_secret(secret, lsa_keys):
     algo = struct.unpack("<L", secret[20:24])[0]
     dg = hashlib.sha256()
     dg.update(lsa_keys[keyid]["key"])
-    for i in xrange(1000):
+    for i in range(1000):
         dg.update(secret[28:60])
     c = M2Crypto.EVP.Cipher(alg="aes_256_ecb", key=dg.digest(), iv="", op=M2Crypto.decrypt)
     c.set_padding(0)
@@ -277,17 +277,17 @@ def pbkdf2(passphrase, salt, keylen, iterations, digest='sha1'):
 
     Returns the corresponding expanded key which is keylen long.
     """
-    buff = ""
+    buff = b""
     i = 1
-    while len(buff) < keylen:
+    while len(buff) < int(keylen):
         U = salt + struct.pack("!L", i)
         i += 1
         derived = M2Crypto.EVP.hmac(passphrase, U, digest)
-        for r in xrange(iterations - 1):
+        for r in range(iterations - 1):
             actual = M2Crypto.EVP.hmac(passphrase, derived, digest)
-            derived = ''.join([chr(ord(x) ^ ord(y)) for (x, y) in zip(derived, actual)])
+            derived = b''.join([bytes(x ^ y) for (x, y) in zip(derived, actual)])
         buff += derived
-    return buff[:keylen]
+    return buff[:int(keylen)]
 
 
 def derivePwdHash(pwdhash, userSID, digest='sha1'):
@@ -299,9 +299,10 @@ def dataDecrypt(cipherAlgo, hashAlgo, raw, encKey, iv, rounds):
     """Internal use. Decrypts data stored in DPAPI structures."""
     hname = {"HMAC": "sha1"}.get(hashAlgo.name, hashAlgo.name)
     derived = pbkdf2(encKey, iv, cipherAlgo.keyLength + cipherAlgo.ivLength, rounds, hname)
-    key, iv = derived[:cipherAlgo.keyLength], derived[cipherAlgo.keyLength:]
-    key = key[:cipherAlgo.keyLength]
-    iv = iv[:cipherAlgo.ivLength]
+    # TODO swap this for our own python 3 compatible pbkdf2
+    key, iv = derived[:int(cipherAlgo.keyLength)], derived[int(cipherAlgo.keyLength):]
+    key = key[:int(cipherAlgo.keyLength)]
+    iv = iv[:int(cipherAlgo.ivLength)]
     cipher = M2Crypto.EVP.Cipher(cipherAlgo.m2name, key, iv, M2Crypto.decrypt, 0)
     cipher.set_padding(0)
     cleartxt = cipher.update(raw) + cipher.final()

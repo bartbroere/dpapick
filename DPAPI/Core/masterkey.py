@@ -21,7 +21,7 @@ import hashlib
 import os
 import re
 from collections import defaultdict
-import cPickle
+import pickle
 
 from DPAPI.Core import eater
 from DPAPI.Core import credhist
@@ -113,7 +113,7 @@ class MasterKey(eater.DataStruct):
                                       pwdhash, self.iv, self.rounds)
         self.key = cleartxt[-64:]
         self.hmacSalt = cleartxt[:16]
-        self.hmac = cleartxt[16:16 + self.hashAlgo.digestLength]
+        self.hmac = cleartxt[16:16 + int(self.hashAlgo.digestLength)]
         self.hmacComputed = crypto.DPAPIHmac(self.hashAlgo, pwdhash,
                                              self.hmacSalt, self.key)
         self.decrypted = self.hmac == self.hmacComputed
@@ -386,9 +386,9 @@ class MasterKeyPool(object):
 
     def pickle(self, filename=None):
         if filename is not None:
-            cPickle.dump(self, filename, 2)
+            pickle.dump(self, filename, 2)
         else:
-            return cPickle.dumps(self, 2)
+            return pickle.dumps(self, 2)
 
     def __getstate__(self):
         d = dict(self.__dict__)
@@ -404,14 +404,14 @@ class MasterKeyPool(object):
     @staticmethod
     def unpickle(data=None, filename=None):
         if data is not None:
-            return cPickle.loads(data)
+            return pickle.loads(data)
         if filename is not None:
-            return cPickle.load(filename)
+            return pickle.load(filename)
         raise ValueError("must provide either data or filename argument")
 
     def try_credential_hash(self, userSID, pwdhash):
         n = 0
-        for mkl in self.keys.values():
+        for mkl in list(self.keys.values()):
             for mk in mkl:
                 if not mk.decrypted:
                     if pwdhash is not None:
@@ -453,7 +453,7 @@ class MasterKeyPool(object):
 
         """
         n = 0
-        for mkl in self.keys.values():
+        for mkl in list(self.keys.values()):
             for mk in mkl:
                 if not mk.decrypted:
                     if password is not None:
@@ -487,11 +487,11 @@ class MasterKeyPool(object):
              "Passwords:",
              repr(self.passwords),
              "Keys:",
-             repr(self.keys.items())]
+             repr(list(self.keys.items()))]
         if self.system is not None:
             s.append(repr(self.system))
         s.append("CredHist entries:")
-        for i in self.creds.keys():
+        for i in list(self.creds.keys()):
             s.append("\tSID: %s" % i)
             s.append(repr(self.creds[i]))
         return "\n".join(s)
